@@ -20,7 +20,13 @@ interface ChatMessage {
 
 // ─── Video call UI (must be inside <LiveKitRoom>) ────────────────────────────
 
-function VideoCallView({ onHangUp }: { onHangUp: () => void }) {
+function VideoCallView({
+  onLeave,
+  onSkip,
+}: {
+  onLeave: () => void;
+  onSkip: () => void;
+}) {
   const tracks = useTracks(
     [{ source: Track.Source.Camera, withPlaceholder: true }],
     { onlySubscribed: false }
@@ -61,7 +67,7 @@ function VideoCallView({ onHangUp }: { onHangUp: () => void }) {
   };
 
   return (
-    <div className="relative min-h-dvh bg-[#0f0623] flex flex-col overflow-hidden">
+    <div className="relative h-dvh bg-[#0f0623] flex flex-col overflow-hidden">
       {/* Ambient orbs */}
       <div
         aria-hidden="true"
@@ -73,109 +79,117 @@ function VideoCallView({ onHangUp }: { onHangUp: () => void }) {
       />
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-5 py-4 shrink-0">
+      <header className="relative z-10 flex items-center justify-between px-5 py-3 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-2xl select-none">🌍</span>
           <span className="text-white font-black text-xl tracking-tight">
             Lingo
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onHangUp}
-          className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-sm py-2 px-6 rounded-full transition-all duration-150 cursor-pointer"
-        >
-          Hang up
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-white font-bold text-sm py-2 px-5 rounded-full transition-all duration-150 cursor-pointer"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            onClick={onLeave}
+            className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-sm py-2 px-5 rounded-full transition-all duration-150 cursor-pointer"
+          >
+            Leave
+          </button>
+        </div>
       </header>
 
-      {/* Video boxes */}
-      <div className="relative z-10 flex gap-3 px-5 pb-4 shrink-0">
-        {/* Stranger */}
-        <div className="relative flex-1 aspect-video rounded-2xl overflow-hidden bg-gray-900/80 border border-white/10">
-          {remoteTrack ? (
-            <VideoTrack
-              trackRef={remoteTrack}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/20">
-              <span className="text-4xl select-none">👤</span>
-              <span className="text-xs">Waiting for match…</span>
-            </div>
-          )}
-          <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
-            Stranger
-          </span>
+      {/* Body */}
+      <div className="relative z-10 flex-1 flex gap-3 px-5 pb-5 min-h-0">
+        {/* Video boxes */}
+        <div className="flex-1 flex gap-3 min-h-0">
+          {/* Stranger */}
+          <div className="flex-1 relative rounded-2xl overflow-hidden bg-gray-900/80 border border-white/10">
+            {remoteTrack ? (
+              <VideoTrack
+                trackRef={remoteTrack}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/20">
+                <span className="text-4xl select-none">👤</span>
+                <span className="text-xs">Waiting for match…</span>
+              </div>
+            )}
+            <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
+              Stranger
+            </span>
+          </div>
+
+          {/* You */}
+          <div className="flex-1 relative rounded-2xl overflow-hidden bg-gray-900/80 border border-white/10">
+            {localTrack ? (
+              <VideoTrack
+                trackRef={localTrack}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/20">
+                <span className="text-4xl select-none">📷</span>
+                <span className="text-xs">No camera</span>
+              </div>
+            )}
+            <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
+              You
+            </span>
+          </div>
         </div>
 
-        {/* You */}
-        <div className="relative flex-1 aspect-video rounded-2xl overflow-hidden bg-gray-900/80 border border-white/10">
-          {localTrack ? (
-            <VideoTrack
-              trackRef={localTrack}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/20">
-              <span className="text-4xl select-none">📷</span>
-              <span className="text-xs">No camera</span>
-            </div>
-          )}
-          <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
-            You
-          </span>
-        </div>
-      </div>
-
-      {/* Chat */}
-      <div className="relative z-10 flex flex-col flex-1 px-5 pb-5 gap-3 min-h-0">
-        {/* Messages area */}
-        <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 overflow-y-auto min-h-0">
-          {messages.length === 0 ? (
-            <p className="text-white/20 text-sm text-center mt-2">
-              Say hello 👋
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {messages.map((msg) => (
+        {/* Chat sidebar — hidden on small screens */}
+        <div className="hidden sm:flex w-52 flex-col gap-2 shrink-0">
+          <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 overflow-y-auto min-h-0 flex flex-col gap-1.5">
+            {messages.length === 0 ? (
+              <p className="text-white/20 text-xs text-center mt-2">
+                Say hi 👋
+              </p>
+            ) : (
+              messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.isLocal ? "justify-end" : "justify-start"}`}
                 >
                   <span
-                    className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm break-words ${
+                    className={`max-w-full px-2.5 py-1.5 rounded-xl text-xs break-words leading-relaxed ${
                       msg.isLocal
-                        ? "bg-violet-600 text-white rounded-br-sm"
-                        : "bg-white/15 text-white/90 rounded-bl-sm"
+                        ? "bg-violet-600 text-white rounded-br-none"
+                        : "bg-white/15 text-white/80 rounded-bl-none"
                     }`}
                   >
                     {msg.text}
                   </span>
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-        {/* Input row */}
-        <div className="flex gap-2 shrink-0">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Type a message…"
-            className="flex-1 bg-white/10 text-white placeholder-white/30 font-medium px-4 py-3 rounded-2xl border border-white/15 focus:outline-none focus:border-white/40"
-          />
-          <button
-            type="button"
-            onClick={sendMessage}
-            className="bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-bold px-5 py-3 rounded-2xl transition-all duration-150 cursor-pointer"
-          >
-            Send
-          </button>
+          <div className="flex gap-1.5 shrink-0">
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Message…"
+              className="flex-1 min-w-0 bg-white/10 text-white placeholder-white/30 text-xs px-3 py-2.5 rounded-xl border border-white/15 focus:outline-none focus:border-white/40"
+            />
+            <button
+              type="button"
+              onClick={sendMessage}
+              className="bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-bold text-sm px-3 py-2 rounded-xl transition-all duration-150 cursor-pointer shrink-0"
+            >
+              ↑
+            </button>
+          </div>
         </div>
       </div>
 
@@ -184,7 +198,7 @@ function VideoCallView({ onHangUp }: { onHangUp: () => void }) {
   );
 }
 
-// ─── Room page (handles token + LiveKitRoom setup) ───────────────────────────
+// ─── Room page ───────────────────────────────────────────────────────────────
 
 export default function RoomPage() {
   const params = useParams();
@@ -213,6 +227,14 @@ export default function RoomPage() {
     fetchToken();
   }, [roomId, participantName]);
 
+  const handleLeave = () => router.push("/");
+
+  const handleSkip = () => {
+    // Flag tells the home page to auto-start searching immediately
+    sessionStorage.setItem("lingo_autostart", "1");
+    router.push("/");
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-[#0f0623] flex flex-col items-center justify-center gap-4 px-6 text-center">
@@ -223,7 +245,7 @@ export default function RoomPage() {
         </p>
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={handleLeave}
           className="mt-4 text-white/50 hover:text-white text-sm underline transition-colors"
         >
           ← Back to home
@@ -249,7 +271,7 @@ export default function RoomPage() {
       audio={true}
       token={token}
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-      onDisconnected={() => router.push("/")}
+      onDisconnected={handleLeave}
       options={{
         videoCaptureDefaults: {
           resolution: VideoPresets.h720.resolution,
@@ -259,7 +281,7 @@ export default function RoomPage() {
         },
       }}
     >
-      <VideoCallView onHangUp={() => router.push("/")} />
+      <VideoCallView onLeave={handleLeave} onSkip={handleSkip} />
     </LiveKitRoom>
   );
 }

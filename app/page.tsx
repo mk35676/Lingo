@@ -170,6 +170,15 @@ export default function Home() {
     setIsSearching(false);
   };
 
+  // If coming back from a Skip, auto-start searching immediately
+  useEffect(() => {
+    if (sessionStorage.getItem("lingo_autostart") === "1") {
+      sessionStorage.removeItem("lingo_autostart");
+      handleStart();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Clean up realtime channel if the component unmounts mid-search
   useEffect(() => {
     return () => {
