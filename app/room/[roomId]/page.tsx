@@ -11,6 +11,7 @@ import {
 } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
+import { useLiveTranscription } from "@/hooks/useLiveTranscription";
 
 interface ChatMessage {
   id: string;
@@ -38,6 +39,8 @@ function VideoCallView({
   const remoteTrack = tracks.find(
     (t) => !t.participant.isLocal && t.publication !== undefined
   ) as TrackReference | undefined;
+
+  const transcript = useLiveTranscription();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
@@ -142,6 +145,18 @@ function VideoCallView({
             <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
               You
             </span>
+            {/* Live transcription caption */}
+            {transcript?.text && (
+              <div className="absolute bottom-8 left-2 right-2 flex justify-center pointer-events-none">
+                <span className="bg-black/70 text-white px-3 py-1.5 rounded-xl text-xs text-center max-w-full leading-relaxed">
+                  {transcript.isFinal ? (
+                    transcript.text
+                  ) : (
+                    <span className="italic opacity-70">{transcript.text}</span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
