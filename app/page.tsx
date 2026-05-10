@@ -28,13 +28,7 @@ function getUserId(): string {
 
 // ─── Searching screen ────────────────────────────────────────────────────────
 
-function SearchingScreen({
-  languageLabel,
-  onCancel,
-}: {
-  languageLabel: string;
-  onCancel: () => void;
-}) {
+function SearchingScreen({ onCancel }: { onCancel: () => void }) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0f0623] flex items-center justify-center">
       <div
@@ -67,7 +61,7 @@ function SearchingScreen({
           Finding your match…
         </p>
         <p className="text-white/40 text-sm mb-12">
-          Looking for someone who speaks {languageLabel}
+          You&apos;ll each speak your own language — we handle the rest
         </p>
 
         <button
@@ -185,14 +179,9 @@ export default function Home() {
     };
   }, []);
 
-  const selectedLanguage = LANGUAGES.find((l) => l.code === language);
-
   if (isSearching) {
     return (
-      <SearchingScreen
-        languageLabel={selectedLanguage?.label ?? "your language"}
-        onCancel={handleCancel}
-      />
+      <SearchingScreen onCancel={handleCancel} />
     );
   }
 
