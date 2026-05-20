@@ -87,6 +87,7 @@ export default function Home() {
 
   const handleStart = async () => {
     setIsSearching(true);
+    localStorage.setItem("lingo_language", language);
     const userId = getUserId();
 
     // Check if anyone is already waiting

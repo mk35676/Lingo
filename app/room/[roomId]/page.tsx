@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   LiveKitRoom,
@@ -8,10 +8,12 @@ import {
   VideoTrack,
   RoomAudioRenderer,
   useDataChannel,
+  useLocalParticipant,
 } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
 import { Track, VideoPresets } from "livekit-client";
 import { useLiveTranscription } from "@/hooks/useLiveTranscription";
+import { supabase } from "@/lib/supabase";
 
 interface ChatMessage {
   id: string;
@@ -24,9 +26,11 @@ interface ChatMessage {
 function VideoCallView({
   onLeave,
   onSkip,
+  roomId,
 }: {
   onLeave: () => void;
   onSkip: () => void;
+  roomId: string;
 }) {
   const tracks = useTracks(
     [{ source: Track.Source.Camera, withPlaceholder: true }],
@@ -40,13 +44,39 @@ function VideoCallView({
     (t) => !t.participant.isLocal && t.publication !== undefined
   ) as TrackReference | undefined;
 
-  const transcript = useLiveTranscription();
+  const { localParticipant } = useLocalParticipant();
+  const micTrack = localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.mediaStreamTrack;
+  const audioStream = useMemo(
+    () => (micTrack ? new MediaStream([micTrack]) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [micTrack]
+  );
+
+  const myLang = useMemo(() => localStorage.getItem("lingo_language") ?? "en", []);
+  const transcript = useLiveTranscription(audioStream, myLang);
+
+  const [remoteLang, setRemoteLang] = useState<string | null>(null);
+  const remoteLangRef = useRef<string | null>(null);
+  const [remoteCaption, setRemoteCaption] = useState("");
+  const captionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFinalRef = useRef("");
+  const sendLingoRef = useRef<((payload: Uint8Array, options: { reliable: boolean; topic: string }) => void) | null>(null);
+
+  const [showReportConfirm, setShowReportConfirm] = useState(false);
+
+  const handleReport = async () => {
+    const reporterId = localStorage.getItem("lingo_user_id") ?? "unknown";
+    const reportedUser = remoteTrack?.participant.identity ?? "unknown";
+    await supabase.from("reports").insert({ reporter_id: reporterId, reported_user: reportedUser, room_id: roomId });
+    setShowReportConfirm(false);
+    onSkip();
+  };
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { send } = useDataChannel("chat", (msg) => {
+  const { send: sendChat } = useDataChannel("chat", (msg) => {
     const text = new TextDecoder().decode(msg.payload);
     setMessages((prev) => [
       ...prev,
@@ -54,14 +84,74 @@ function VideoCallView({
     ]);
   });
 
+  const { send: sendLingo } = useDataChannel("lingo", (msg) => {
+    try {
+      const data = JSON.parse(new TextDecoder().decode(msg.payload));
+      if (data.type === "lang" && !remoteLangRef.current) {
+        remoteLangRef.current = data.lang;
+        setRemoteLang(data.lang);
+      }
+      if (data.type === "caption") {
+        setRemoteCaption(data.text);
+        if (captionTimerRef.current) clearTimeout(captionTimerRef.current);
+        captionTimerRef.current = setTimeout(() => setRemoteCaption(""), 4000);
+      }
+    } catch {}
+  });
+
+  // Keep the ref in sync so effects can call sendLingo without listing it as a dep
+  sendLingoRef.current = sendLingo;
+
+  // Keep broadcasting our language every 2s until the other user responds
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const send = () => sendLingoRef.current?.(
+      new TextEncoder().encode(JSON.stringify({ type: "lang", lang: myLang })),
+      { reliable: true, topic: "lingo" }
+    );
+    send();
+    const interval = setInterval(() => {
+      if (remoteLangRef.current) { clearInterval(interval); return; }
+      send();
+    }, 2000);
+    return () => clearInterval(interval);
+  // myLang never changes after mount, safe to omit sendLingoRef
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myLang]);
+
+  // Translate final transcripts and send as captions to the other user
+  useEffect(() => {
+    if (!transcript?.isFinal || !transcript.text) return;
+    if (transcript.text === lastFinalRef.current) return;
+    if (!remoteLangRef.current || myLang === remoteLangRef.current) return;
+    lastFinalRef.current = transcript.text;
+
+    fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: transcript.text, source: myLang, target: remoteLangRef.current }),
+    })
+      .then((r) => r.json())
+      .then(({ text: translated }) => {
+        if (!translated) return;
+        sendLingoRef.current?.(
+          new TextEncoder().encode(JSON.stringify({ type: "caption", text: translated })),
+          { reliable: true, topic: "lingo" }
+        );
+      })
+      .catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript, myLang]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   const sendMessage = () => {
     const text = inputText.trim();
     if (!text) return;
-    send(new TextEncoder().encode(text), { reliable: true, topic: "chat" });
+    sendChat(new TextEncoder().encode(text), { reliable: true, topic: "chat" });
     setMessages((prev) => [
       ...prev,
       { id: crypto.randomUUID(), text, isLocal: true },
@@ -70,7 +160,7 @@ function VideoCallView({
   };
 
   return (
-    <div className="relative h-dvh bg-[#0f0623] flex flex-col overflow-hidden">
+    <div className="relative h-full bg-[#0f0623] flex flex-col overflow-hidden">
       {/* Ambient orbs */}
       <div
         aria-hidden="true"
@@ -90,6 +180,14 @@ function VideoCallView({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowReportConfirm(true)}
+            className="bg-white/10 hover:bg-white/20 active:scale-95 text-white/60 hover:text-white text-sm py-2 px-4 rounded-full transition-all duration-150 cursor-pointer"
+            title="Report user"
+          >
+            🚩
+          </button>
           <button
             type="button"
             onClick={onSkip}
@@ -127,6 +225,13 @@ function VideoCallView({
             <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
               Stranger
             </span>
+            {remoteCaption && (
+              <div className="absolute bottom-8 left-2 right-2 flex justify-center pointer-events-none">
+                <span className="bg-black/70 text-white px-3 py-1.5 rounded-xl text-xs text-center max-w-full leading-relaxed">
+                  {remoteCaption}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* You */}
@@ -145,7 +250,6 @@ function VideoCallView({
             <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
               You
             </span>
-            {/* Live transcription caption */}
             {transcript?.text && (
               <div className="absolute bottom-8 left-2 right-2 flex justify-center pointer-events-none">
                 <span className="bg-black/70 text-white px-3 py-1.5 rounded-xl text-xs text-center max-w-full leading-relaxed">
@@ -161,7 +265,7 @@ function VideoCallView({
         </div>
 
         {/* Chat sidebar — hidden on small screens */}
-        <div className="hidden sm:flex w-52 flex-col gap-2 shrink-0">
+        <div className="hidden sm:flex w-52 flex-col gap-2 shrink-0 min-h-0">
           <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 overflow-y-auto min-h-0 flex flex-col gap-1.5">
             {messages.length === 0 ? (
               <p className="text-white/20 text-xs text-center mt-2">
@@ -209,6 +313,31 @@ function VideoCallView({
       </div>
 
       <RoomAudioRenderer />
+
+      {showReportConfirm && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#1a0a2e] border border-white/20 rounded-2xl p-6 mx-4 max-w-xs w-full flex flex-col gap-4">
+            <p className="text-white font-bold text-center">Report this user?</p>
+            <p className="text-white/50 text-xs text-center">They'll be skipped and flagged for review.</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowReportConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-white/20 text-white/60 text-sm font-semibold hover:border-white/40 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReport}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors cursor-pointer"
+              >
+                Report & Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -282,6 +411,7 @@ export default function RoomPage() {
 
   return (
     <LiveKitRoom
+      className="h-full"
       video={true}
       audio={true}
       token={token}
@@ -296,7 +426,7 @@ export default function RoomPage() {
         },
       }}
     >
-      <VideoCallView onLeave={handleLeave} onSkip={handleSkip} />
+      <VideoCallView onLeave={handleLeave} onSkip={handleSkip} roomId={roomId} />
     </LiveKitRoom>
   );
 }
