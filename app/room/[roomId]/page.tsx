@@ -48,14 +48,12 @@ function VideoCallView({
   const micTrack = localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.mediaStreamTrack;
   const audioStream = useMemo(
     () => (micTrack ? new MediaStream([micTrack]) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [micTrack]
   );
 
   const myLang = useMemo(() => localStorage.getItem("lingo_language") ?? "en", []);
   const transcript = useLiveTranscription(audioStream, myLang);
 
-  const [remoteLang, setRemoteLang] = useState<string | null>(null);
   const remoteLangRef = useRef<string | null>(null);
   const [remoteCaption, setRemoteCaption] = useState("");
   const captionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,7 +87,6 @@ function VideoCallView({
       const data = JSON.parse(new TextDecoder().decode(msg.payload));
       if (data.type === "lang" && !remoteLangRef.current) {
         remoteLangRef.current = data.lang;
-        setRemoteLang(data.lang);
       }
       if (data.type === "caption") {
         setRemoteCaption(data.text);
@@ -114,9 +111,7 @@ function VideoCallView({
       send();
     }, 2000);
     return () => clearInterval(interval);
-  // myLang never changes after mount, safe to omit sendLingoRef
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myLang]);
+  }, [myLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Translate final transcripts and send as captions to the other user
   useEffect(() => {
@@ -139,8 +134,7 @@ function VideoCallView({
         );
       })
       .catch(console.error);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transcript, myLang]);
+  }, [transcript, myLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -318,7 +312,7 @@ function VideoCallView({
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-[#1a0a2e] border border-white/20 rounded-2xl p-6 mx-4 max-w-xs w-full flex flex-col gap-4">
             <p className="text-white font-bold text-center">Report this user?</p>
-            <p className="text-white/50 text-xs text-center">They'll be skipped and flagged for review.</p>
+            <p className="text-white/50 text-xs text-center">They&apos;ll be skipped and flagged for review.</p>
             <div className="flex gap-2">
               <button
                 type="button"
