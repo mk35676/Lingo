@@ -21,6 +21,19 @@ interface ChatMessage {
   isLocal: boolean;
 }
 
+const LANG_INFO: Record<string, { flag: string; label: string }> = {
+  en: { flag: "🇬🇧", label: "English" },
+  es: { flag: "🇪🇸", label: "Spanish" },
+  fr: { flag: "🇫🇷", label: "French" },
+  de: { flag: "🇩🇪", label: "German" },
+  it: { flag: "🇮🇹", label: "Italian" },
+  pt: { flag: "🇧🇷", label: "Portuguese" },
+  tr: { flag: "🇹🇷", label: "Turkish" },
+  ar: { flag: "🇸🇦", label: "Arabic" },
+  hi: { flag: "🇮🇳", label: "Hindi" },
+  ru: { flag: "🇷🇺", label: "Russian" },
+};
+
 // ─── Video call UI (must be inside <LiveKitRoom>) ────────────────────────────
 
 function VideoCallView({
@@ -54,6 +67,7 @@ function VideoCallView({
   const myLang = useMemo(() => localStorage.getItem("lingo_language") ?? "en", []);
   const transcript = useLiveTranscription(audioStream, myLang);
 
+  const [remoteLang, setRemoteLang] = useState<string | null>(null);
   const remoteLangRef = useRef<string | null>(null);
   const [remoteCaption, setRemoteCaption] = useState("");
   const captionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,6 +101,7 @@ function VideoCallView({
       const data = JSON.parse(new TextDecoder().decode(msg.payload));
       if (data.type === "lang" && !remoteLangRef.current) {
         remoteLangRef.current = data.lang;
+        setRemoteLang(data.lang);
       }
       if (data.type === "caption") {
         setRemoteCaption(data.text);
@@ -219,6 +234,12 @@ function VideoCallView({
             <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
               Stranger
             </span>
+            {remoteLang && LANG_INFO[remoteLang] && (
+              <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                <span className="text-sm leading-none">{LANG_INFO[remoteLang].flag}</span>
+                <span className="text-white text-xs font-semibold">{LANG_INFO[remoteLang].label}</span>
+              </div>
+            )}
             {remoteCaption && (
               <div className="absolute bottom-8 left-2 right-2 flex justify-center pointer-events-none">
                 <span className="bg-black/70 text-white px-3 py-1.5 rounded-xl text-xs text-center max-w-full leading-relaxed">
@@ -244,6 +265,12 @@ function VideoCallView({
             <span className="absolute bottom-2 left-2 bg-black/50 text-white/60 text-xs font-semibold px-2 py-0.5 rounded-md">
               You
             </span>
+            {LANG_INFO[myLang] && (
+              <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                <span className="text-sm leading-none">{LANG_INFO[myLang].flag}</span>
+                <span className="text-white text-xs font-semibold">{LANG_INFO[myLang].label}</span>
+              </div>
+            )}
             {transcript?.text && (
               <div className="absolute bottom-8 left-2 right-2 flex justify-center pointer-events-none">
                 <span className="bg-black/70 text-white px-3 py-1.5 rounded-xl text-xs text-center max-w-full leading-relaxed">
