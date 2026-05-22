@@ -102,6 +102,11 @@ function VideoCallView({
       if (data.type === "lang" && !remoteLangRef.current) {
         remoteLangRef.current = data.lang;
         setRemoteLang(data.lang);
+        // Reply immediately so the other user gets our language even if they joined late
+        sendLingoRef.current?.(
+          new TextEncoder().encode(JSON.stringify({ type: "lang", lang: myLang })),
+          { reliable: true, topic: "lingo" }
+        );
       }
       if (data.type === "caption") {
         setRemoteCaption(data.text);
