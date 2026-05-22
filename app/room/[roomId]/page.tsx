@@ -86,7 +86,7 @@ function VideoCallView({
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const { send: sendChat } = useDataChannel("chat", (msg) => {
     const text = new TextDecoder().decode(msg.payload);
@@ -157,8 +157,8 @@ function VideoCallView({
   }, [transcript, myLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0 && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -292,7 +292,7 @@ function VideoCallView({
 
         {/* Chat sidebar — hidden on small screens */}
         <div className="hidden sm:flex w-52 flex-col gap-2 shrink-0 min-h-0">
-          <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 overflow-y-auto min-h-0 flex flex-col gap-1.5">
+          <div ref={chatContainerRef} className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 overflow-y-auto min-h-0 flex flex-col gap-1.5">
             {messages.length === 0 ? (
               <p className="text-white/20 text-xs text-center mt-2">
                 Say hi 👋
@@ -315,7 +315,6 @@ function VideoCallView({
                 </div>
               ))
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           <div className="flex gap-1.5 shrink-0">
@@ -325,7 +324,8 @@ function VideoCallView({
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Message…"
-              className="flex-1 min-w-0 bg-white/10 text-white placeholder-white/30 text-xs px-3 py-2.5 rounded-xl border border-white/15 focus:outline-none focus:border-white/40"
+              style={{ fontSize: "16px" }}
+              className="flex-1 min-w-0 bg-white/10 text-white placeholder-white/30 px-3 py-2.5 rounded-xl border border-white/15 focus:outline-none focus:border-white/40"
             />
             <button
               type="button"
