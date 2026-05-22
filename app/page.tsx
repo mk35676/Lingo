@@ -30,44 +30,44 @@ function getUserId(): string {
 
 function SearchingScreen({ onCancel }: { onCancel: () => void }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0f0623] flex items-center justify-center">
+    <main className="relative min-h-screen overflow-hidden bg-white flex items-center justify-center">
       <div
         aria-hidden="true"
-        className="absolute -top-[15%] -left-[10%] w-[500px] h-[500px] rounded-full bg-pink-600/25 blur-[120px] pointer-events-none"
+        className="absolute -top-[15%] -left-[10%] w-[500px] h-[500px] rounded-full bg-pink-300/50 blur-[130px] pointer-events-none"
       />
       <div
         aria-hidden="true"
-        className="absolute -bottom-[20%] -right-[5%] w-[600px] h-[600px] rounded-full bg-purple-700/25 blur-[120px] pointer-events-none"
+        className="absolute -bottom-[20%] -right-[5%] w-[600px] h-[600px] rounded-full bg-violet-300/50 blur-[130px] pointer-events-none"
       />
 
       <div className="relative z-10 flex flex-col items-center text-center px-6">
         {/* Sonar rings */}
         <div className="relative flex items-center justify-center w-40 h-40 mb-10">
-          <div className="absolute w-40 h-40 rounded-full border-2 border-violet-400/50 animate-sonar" />
+          <div className="absolute w-40 h-40 rounded-full border-2 border-violet-400/60 animate-sonar" />
           <div
-            className="absolute w-40 h-40 rounded-full border-2 border-violet-400/35 animate-sonar"
+            className="absolute w-40 h-40 rounded-full border-2 border-violet-400/40 animate-sonar"
             style={{ animationDelay: "0.6s" }}
           />
           <div
             className="absolute w-40 h-40 rounded-full border-2 border-violet-400/20 animate-sonar"
             style={{ animationDelay: "1.2s" }}
           />
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 shadow-lg shadow-violet-500/50 flex items-center justify-center text-2xl select-none">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-violet-600 shadow-lg shadow-violet-300/60 flex items-center justify-center text-2xl select-none">
             🌍
           </div>
         </div>
 
-        <p className="text-white text-2xl font-bold mb-2">
+        <p className="text-gray-900 text-2xl font-bold mb-2">
           Finding your match…
         </p>
-        <p className="text-white/40 text-sm mb-12">
+        <p className="text-gray-400 text-sm mb-12">
           You&apos;ll each speak your own language — we handle the rest
         </p>
 
         <button
           type="button"
           onClick={onCancel}
-          className="text-white/50 hover:text-white border border-white/20 hover:border-white/40 font-semibold py-3 px-10 rounded-full transition-all duration-200 cursor-pointer"
+          className="text-gray-400 hover:text-gray-700 border border-gray-200 hover:border-gray-400 font-semibold py-3 px-10 rounded-full transition-all duration-200 cursor-pointer"
         >
           Cancel
         </button>
@@ -196,19 +196,19 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0f0623] flex items-center justify-center">
+    <main className="relative min-h-screen overflow-hidden bg-white flex items-center justify-center">
       {/* Ambient background glow orbs */}
       <div
         aria-hidden="true"
-        className="absolute -top-[15%] -left-[10%] w-[500px] h-[500px] rounded-full bg-pink-600/25 blur-[120px] pointer-events-none"
+        className="absolute -top-[15%] -left-[10%] w-[550px] h-[550px] rounded-full bg-pink-300/50 blur-[130px] pointer-events-none"
       />
       <div
         aria-hidden="true"
-        className="absolute -bottom-[20%] -right-[5%] w-[600px] h-[600px] rounded-full bg-purple-700/25 blur-[120px] pointer-events-none"
+        className="absolute -bottom-[20%] -right-[5%] w-[600px] h-[600px] rounded-full bg-violet-300/50 blur-[130px] pointer-events-none"
       />
       <div
         aria-hidden="true"
-        className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full bg-blue-600/20 blur-[100px] pointer-events-none"
+        className="absolute top-[35%] right-[15%] w-[350px] h-[350px] rounded-full bg-blue-200/60 blur-[100px] pointer-events-none"
       />
 
       <div className="relative z-10 flex flex-col items-center text-center px-6 py-16">
@@ -220,35 +220,35 @@ export default function Home() {
           🌍
         </span>
 
-        <h1 className="text-7xl sm:text-8xl font-black text-white tracking-tight leading-none mb-4">
+        <h1 className="text-7xl sm:text-8xl font-black text-gray-900 tracking-tight leading-none mb-4">
           Lingo
         </h1>
 
-        <p className="text-xl sm:text-2xl font-semibold text-white/85 mb-3 leading-tight">
+        <p className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 leading-tight">
           Talk to the world.
         </p>
-        <p className="text-base sm:text-lg text-white/50 mb-10 max-w-xs leading-relaxed">
+        <p className="text-base sm:text-lg text-gray-400 mb-10 max-w-xs leading-relaxed">
           Live video chat with real-time translation — meet anyone, anywhere.
         </p>
 
         {/* Language picker */}
         <div className="mb-6 w-full max-w-xs">
-          <label className="block text-white/40 text-xs font-semibold uppercase tracking-widest mb-2">
+          <label className="block text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">
             I speak
           </label>
           <div className="relative">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-white/10 text-white font-semibold py-3.5 px-5 rounded-2xl border border-white/15 focus:outline-none focus:border-white/40 appearance-none cursor-pointer"
+              className="w-full bg-white text-gray-800 font-semibold py-3.5 px-5 rounded-2xl border border-gray-200 shadow-sm focus:outline-none focus:border-violet-300 appearance-none cursor-pointer"
             >
               {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code} className="bg-[#1a0a2e]">
+                <option key={l.code} value={l.code}>
                   {l.label}
                 </option>
               ))}
             </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50 text-sm">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-sm">
               ▾
             </div>
           </div>
@@ -258,13 +258,13 @@ export default function Home() {
         <button
           type="button"
           onClick={handleStart}
-          className="animate-pulse-glow bg-gradient-to-r from-pink-500 via-violet-500 to-blue-500 text-white text-2xl font-bold py-5 px-20 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer select-none"
+          className="animate-pulse-glow bg-gradient-to-r from-pink-500 via-violet-500 to-blue-500 text-white text-2xl font-bold py-5 px-20 rounded-full shadow-xl shadow-violet-200 hover:scale-105 active:scale-95 transition-transform duration-150 cursor-pointer select-none"
         >
           Start
         </button>
 
-        <p className="mt-8 text-white/30 text-sm font-medium tracking-wide">
-          5 free minutes every day · No sign-up needed
+        <p className="mt-8 text-gray-300 text-sm font-medium tracking-wide">
+          No sign-up needed
         </p>
       </div>
     </main>
