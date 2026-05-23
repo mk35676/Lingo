@@ -88,14 +88,6 @@ function VideoCallView({
   const [inputText, setInputText] = useState("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const { send: sendChat } = useDataChannel("chat", (msg) => {
-    const text = new TextDecoder().decode(msg.payload);
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), text, isLocal: false },
-    ]);
-  });
-
   const { send: sendLingo } = useDataChannel("lingo", (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload));
@@ -107,6 +99,12 @@ function VideoCallView({
           new TextEncoder().encode(JSON.stringify({ type: "lang", lang: myLang })),
           { reliable: true, topic: "lingo" }
         );
+      }
+      if (data.type === "chat") {
+        setMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), text: data.text, isLocal: false },
+        ]);
       }
       if (data.type === "caption") {
         setRemoteCaption(data.text);
@@ -165,7 +163,10 @@ function VideoCallView({
   const sendMessage = () => {
     const text = inputText.trim();
     if (!text) return;
-    sendChat(new TextEncoder().encode(text), { reliable: true, topic: "chat" });
+    sendLingoRef.current?.(
+      new TextEncoder().encode(JSON.stringify({ type: "chat", text })),
+      { reliable: true, topic: "lingo" }
+    );
     setMessages((prev) => [
       ...prev,
       { id: crypto.randomUUID(), text, isLocal: true },
